@@ -2,8 +2,9 @@
 #define HTTP_H
 
 #include <Arduino.h>
+#include "config.h"
 
-#define MAX_PATH_LEN 20
+#define MAX_PATH_LEN 50
 #define MAX_METHOD_LEN 6
 
 class HTTP {
@@ -13,9 +14,19 @@ class HTTP {
       POST
     };
 
-    struct Request {
-      RequestMethod method;
-      char *path;
+    class Request {
+      private:
+        RequestMethod method;
+        char *path;
+
+      public:
+        char *getPath();
+        void setPath(const char *);
+        RequestMethod getMethod();
+        void setMethod(RequestMethod);
+        
+        Request();
+        ~Request();
     };
 
     class Response {
@@ -45,7 +56,7 @@ class HTTP {
         ContentType contentType;
         char *readyResponse;
 
-        void setHeader(char *);
+        void setHeader(const char *);
         void setHeaders();
         int getLength();
         void freeHeaders();
@@ -53,7 +64,7 @@ class HTTP {
 
     };
 
-    static Request parseRequest(char*);
+    static bool parseRequestString(const char*, Request *);
 };
 
 #endif

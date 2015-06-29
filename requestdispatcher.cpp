@@ -48,8 +48,8 @@ void RequestDispatcher::dispatch(HTTP::Request *request, HTTP::Response *respons
   int i = 0;
   
   for(; i < routesCount; i++) {    
-    if(methods[i] == request->method) {
-      if(strcmp(routes[i], request->path) == 0) {
+    if(methods[i] == request->getMethod()) {
+      if(strcmp(routes[i], request->getPath()) == 0) {
         return callbacks[i](response);
       }
     }

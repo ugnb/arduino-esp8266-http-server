@@ -28,9 +28,7 @@ void setup()
 {
   pinMode(esp8266EnablePin, OUTPUT);
   Serial.begin(9600);
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for Leonardo only
-  }
+
   esp8266Port.begin(9600);
 
   logger->log("Enabling wifi... ");
@@ -49,18 +47,25 @@ void loop()
   if(esp8266->hasNewTCPConnection()) {
      ESP8266::TCPConnection connection = esp8266->getNextTCPConnection();
      
-     HTTP::Request request = HTTP::parseRequest(connection.data);
+     HTTP::Request *request = new HTTP::Request();
      HTTP::Response *response = new HTTP::Response();
      
-     logger->log(request.method);
-     logger->log(request.path);
-     
-     dispatcher->dispatch(&request, response);
-     
-     esp8266->sendDataToTCPConnection(connection, response->prepare());
+     if(HTTP::parseRequestString(connection.data, request)) {
+       logger->log(request->getMethod());
+       logger->log(request->getPath());
+       
+       dispatcher->dispatch(request, response);
+       
+       logger->log(response->prepare());
+       
+       esp8266->sendDataToTCPConnection(connection, response->prepare());
+     }
+     else {
+       logger->log("Failed to parse request");
+     }
      
      free(connection.data);
-     free(request.path);
+     delete request;
      delete response;
   }
 

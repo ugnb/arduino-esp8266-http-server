@@ -1,33 +1,53 @@
 #include "http.h"
 
-HTTP::Request HTTP::parseRequest(char* requestString) {
-  Request request = {};
+bool HTTP::parseRequestString(const char* requestString, HTTP::Request *request) {
+  char pathBuffer[MAX_PATH_LEN + 1];
+  char methodBuffer[MAX_METHOD_LEN + 1];
 
-  request.path = (char*) malloc((MAX_PATH_LEN + 1) * sizeof(char));
-  char method[MAX_METHOD_LEN + 1];
-  int i;
-  for (i = 0; i <= MAX_PATH_LEN; i++) {
-    request.path[i] = '\0';
-  }
-  method[MAX_METHOD_LEN] = '\0';
-
-  int matches = sscanf(requestString, "%s %s HTTP/", method, request.path);
+  int matches = sscanf(requestString, "%"XSTR(MAX_METHOD_LEN)"s %"XSTR(MAX_PATH_LEN)"s HTTP/", methodBuffer, pathBuffer);
   if (matches == 2) {
-    if (strcmp (method, "GET") == 0) {
-      request.method = GET;
+    RequestMethod method = HTTP::GET;
+
+    if (strcmp (methodBuffer, "GET") == 0) {
+      method = HTTP::GET;
     }
-    else if (strcmp (method, "POST") == 0) {
-      request.method = POST;
+    else if (strcmp (methodBuffer, "POST") == 0) {
+      method = HTTP::POST;
     }
-    request.path = (char*) realloc(request.path, (strlen(request.path) + 1) * sizeof(char));
+    
+    request->setMethod(method);
+    request->setPath(pathBuffer);
+    
+    return true;
   }
-  return request;
+ 
+  return false;
 }
 
-HTTP::Response::~Response() {
-  freeHeaders();
-  free(body);
-  free(readyResponse);
+HTTP::Request::Request() {
+  path = (char*)malloc(sizeof(char));
+  path[0] = '\0';
+}
+
+HTTP::Request::~Request() {
+  free(path);
+}
+
+char *HTTP::Request::getPath() {
+  return path;
+}
+
+void HTTP::Request::setPath(const char *newPath) {
+  path = (char*)realloc(path, (strlen(newPath) + 1) * sizeof(char));
+  strcpy(path, newPath);
+}
+
+HTTP::RequestMethod HTTP::Request::getMethod() {
+  return method;
+}
+
+void HTTP::Request::setMethod(RequestMethod newMethod) {
+  method = newMethod;
 }
 
 HTTP::Response::Response() {
@@ -42,6 +62,12 @@ HTTP::Response::Response() {
   readyResponse = NULL;
 }
 
+HTTP::Response::~Response() {
+  freeHeaders();
+  free(body);
+  free(readyResponse);
+}
+
 void HTTP::Response::freeHeaders() {
   if (headersCount > 0) {
     int i = 0;
@@ -52,7 +78,6 @@ void HTTP::Response::freeHeaders() {
   }
 }
 
-
 void HTTP::Response::resetHeaders() {
   freeHeaders();
 
@@ -60,7 +85,7 @@ void HTTP::Response::resetHeaders() {
   headers = (char**) malloc(headersCount * sizeof(char*));
 }
 
-void HTTP::Response::setHeader(char *headerString) {
+void HTTP::Response::setHeader(const char *headerString) {
   headersCount++;
   headers = (char**) realloc(headers, headersCount * sizeof(char*));
   headers[headersCount - 1] = (char*) malloc((strlen(headerString) + 1) * sizeof(char));
